@@ -1,32 +1,9 @@
 #! coding: utf-8
 
 import unittest
-from utils.tools import get_model_name, get_completion
 from rich.console import Console
 from rich.markdown import Markdown
-import webbrowser
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-import urllib.parse
-
-
-def show_html_content(html_content=None):
-    # ChromeDriver configuration
-    service = Service(executable_path='/opt/homebrew/bin/chromedriver')
-    opts = Options()
-
-    driver = webdriver.Chrome(service=service, options=opts)
-
-    data_url = "data:text/html;charset=utf-8," + urllib.parse.quote(html_content)
-    driver.get(data_url)
-
-    # Wait for the page to load
-    input("Press Enter to close the browser...")
-
-    driver.quit()
-    pass
-
+from utils.tools import get_model_name, get_completion, show_html_content
 
 """
 Iterative Prompt Development

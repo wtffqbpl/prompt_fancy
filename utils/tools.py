@@ -8,6 +8,27 @@ from dotenv import load_dotenv, find_dotenv
 from typing import Optional, Tuple
 from utils.configs import get_llm_client
 from utils.configs import get_model_name
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import urllib.parse
+
+
+def show_html_content(html_content=None):
+    # ChromeDriver configuration
+    service = Service(executable_path='/opt/homebrew/bin/chromedriver')
+    opts = Options()
+
+    driver = webdriver.Chrome(service=service, options=opts)
+
+    data_url = "data:text/html;charset=utf-8," + urllib.parse.quote(html_content)
+    driver.get(data_url)
+
+    # Wait for the page to load
+    input("Press Enter to close the browser...")
+
+    driver.quit()
+    pass
 
 
 def split_think_answer(text: str) -> Tuple[Optional[str], str]:
