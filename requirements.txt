@@ -1,2 +1,5 @@
 openai~=1.77
 dotenv~=0.9
+requests~=2.32.3
+ollama~=0.4.8
+python-dotenv~=1.1.0
