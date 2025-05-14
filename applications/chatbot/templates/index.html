@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>客服 Chatbot</title>
+</head>
+<body>
+    <h1>客服 Chatbot</h1>
+    <div id="chatbox" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:scroll;"></div>
+    <input type="text" id="user_input" placeholder="输入消息..." style="width:80%; padding:5px;">
+    <button onclick="sendMessage()">发送</button>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById("user_input");
+            const message = input.value;
+            const chatbox = document.getElementById("chatbox");
+
+            chatbox.innerHTML += `<p><strong>你:</strong> ${message}</p>`;
+            input.value = "";
+
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({user_id: "user123", message: message})
+            });
+            const data = await res.json();
+            chatbox.innerHTML += `<p><strong>助手:</strong> ${data.response}</p>`;
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+</body>
+</html>

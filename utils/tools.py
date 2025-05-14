@@ -56,48 +56,71 @@ def split_think_answer(text: str) -> Tuple[Optional[str], str]:
     return answer_content, think_content
 
 
-def get_completion_openai(prompt, sys_prompt=None, model='gpt-3.5-turbo', temperature=0.0):
-    """ Get completion from OpenAI API using the given prompt and model."""
+class OpenAIClient:
 
-    # Configure OpenAI API key and base URL
-    client = get_llm_client(model)
+    @staticmethod
+    def get_completion(prompt, sys_prompt=None, model='gpt-3.5-turbo', temperature=0.0):
+        """ Get completion from OpenAI API using the given prompt and model."""
 
-    messages = [
-        {'role': 'user', 'content': prompt}
-    ]
+        # Configure OpenAI API key and base URL
+        client = get_llm_client(model)
 
-    # Add system prompt if provided
-    if sys_prompt:
-        messages.insert(0, {'role': 'system', 'content': sys_prompt})
+        messages = [
+            {'role': 'user', 'content': prompt}
+        ]
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,  # 0.0 is deterministic, 1.0 is random
-    )
+        # Add system prompt if provided
+        if sys_prompt:
+            messages.insert(0, {'role': 'system', 'content': sys_prompt})
 
-    # return the content of the response
-    return response.choices[0].message.content
+        response = client.chat.completions.create(
+            model=model, messages=messages, temperature=temperature)
+
+        # return the content of the response
+        return response.choices[0].message.content
+
+    @staticmethod
+    def get_completion_from_messages(messages, model='gpt-3.5-turbo', temperature=0.0, max_tokens=32*1024):
+        client = get_llm_client(model)
+        response = client.chat.completions.create(
+            model=model, messages=messages, temperature=temperature, max_tokens=max_tokens)
+        return response.choices[0].message.content
 
 
-def get_completion_ollama(user_prompt, model='llama3.2', sys_prompt=None, temperature=0.0):
-    messages = [
-        {'role': 'user', 'content': user_prompt}
-    ]
+class OllamaClient:
 
-    if sys_prompt:
-        messages.insert(0, {'role': 'system', 'content': sys_prompt})
+    @staticmethod
+    def get_completion(user_prompt, model='llama3.2', sys_prompt=None, temperature=0.0):
+        messages = [
+            {'role': 'user', 'content': user_prompt}
+        ]
 
-    payload = {
-        'model': model,
-        'messages': messages,
-        'temperature': temperature
-    }
+        if sys_prompt:
+            messages.insert(0, {'role': 'system', 'content': sys_prompt})
 
-    url = 'http://localhost:11434/v1/chat/completions'
-    response = requests.post(url, json=payload)
-    data = response.json()
-    return data['choices'][0]['message']['content']
+        payload = {
+            'model': model,
+            'messages': messages,
+            'temperature': temperature
+        }
+
+        url = 'http://localhost:11434/v1/chat/completions'
+        response = requests.post(url, json=payload)
+        data = response.json()
+        return data['choices'][0]['message']['content']
+
+    @staticmethod
+    def get_completion_from_messages(messages, model='llama3.2', temperature=0.0, max_tokens=32*1024):
+        payload = {
+            'model': model,
+            'messages': messages,
+            'temperature': temperature,
+        }
+
+        url = 'http://localhost:11434/v1/chat/completions'
+        response = requests.post(url, json=payload)
+        data = response.json()
+        return data['choices'][0]['message']['content']
 
 
 def get_completion(user_prompt, model='llama3.2', sys_prompt=None, temperature=0.0):
@@ -106,10 +129,25 @@ def get_completion(user_prompt, model='llama3.2', sys_prompt=None, temperature=0
     platform = os.environ["PLATFORM"]
 
     if platform == 'ollama':
-        msg = get_completion_ollama(user_prompt, model=model, sys_prompt=sys_prompt, temperature=temperature)
+        msg = OllamaClient.get_completion(
+            user_prompt, model=model, sys_prompt=sys_prompt, temperature=temperature)
     else:
-        msg = get_completion_openai(user_prompt, sys_prompt=sys_prompt, model=model, temperature=temperature)
+        msg = OpenAIClient.get_completion(
+            user_prompt, sys_prompt=sys_prompt, model=model, temperature=temperature)
 
+    return split_think_answer(msg)
+
+
+def get_completion_from_messages(messages, model='llama3.2', temperature=0.0, max_tokens=32*1024):
+
+    _ = load_dotenv(find_dotenv())
+    platform = os.environ["PLATFORM"]
+    if platform == 'ollama':
+        msg = OllamaClient.get_completion_from_messages(
+            messages, model=model, temperature=temperature)
+    else:
+        msg = OpenAIClient.get_completion_from_messages(
+            messages, model=model, temperature=temperature)
     return split_think_answer(msg)
 
 
