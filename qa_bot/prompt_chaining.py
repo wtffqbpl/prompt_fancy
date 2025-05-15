@@ -1,8 +1,10 @@
 #! coding: utf-8
 
 import unittest
+import os
 import json
 from utils.tools import get_model_name, get_completion, get_completion_from_messages
+from qa_bot.qa_bot_utils import create_products
 
 
 # Prompt Chaining
@@ -119,6 +121,13 @@ class ChatGPTPluginDemo:
         self.model = get_model_name()
         self.products = {}
 
+        # Create products.json file
+        create_products()
+
+        if not os.path.exists('products.json'):
+            print("products.json file not found.")
+            raise FileNotFoundError
+
         with open('products.json', 'r') as f:
             self.products = json.load(f)
 
@@ -177,6 +186,53 @@ class ChatGPTPluginDemo:
 #  6. 我们可以使用更智能的检索机制，而不仅是精确匹配，例如文本Embedding 实现语义搜索。
 # 因此合理设计 Prompt Chaining的信息提供策略，既考虑模型的能力限制，也兼顾提升其主动学习能力，是Prompt Engineering
 # 中需要着重考虑的点。
+
+
+class TestChatGPTPluginDemo(unittest.TestCase):
+    def setUp(self) -> None:
+        self.model = get_model_name()
+        self.plugin = ChatGPTPluginDemo()
+
+    def test_get_product_by_name(self):
+        product = self.plugin.get_product_by_name("TechPro Ultrabook")
+        print(product)
+
+    def test_get_products_by_category(self):
+        products = self.plugin.get_products_by_category("Computers and Laptops")
+        print(products)
+
+    def test_read_string_to_list(self):
+        input_string = '[{"category": "Computers and Laptops", "products": ["TechPro Ultrabook"]}]'
+        data_list = self.plugin.read_string_to_list(input_string)
+        print(data_list)
+
+    def test_generate_output_string(self):
+        input_string = '[{"category": "Computers and Laptops", "products": ["TechPro Ultrabook"]}]'
+        data_list = self.plugin.read_string_to_list(input_string)
+        output_string = self.plugin.generate_output_string(data_list)
+        print(output_string)
+
+    def test_model_inference(self):
+
+
+        
+        system_msg = f"""
+        You are a customer service assistant for a large electronic store. \
+        Respond in a friendly and helpful tone, with very concise answers. \
+        Make sure to ask the user relevant follow up questions.
+        """
+
+        user_msg = f"""
+        tell me about the smartx pro phone and the fotosnap camera, the dslr one. \
+        Also tell me about your tvs.
+        """
+
+        msgs = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_msg},
+            {"role": "assistant", "content": f"Relevant product information:\n{}"}
+        ]
+        pass
 
 
 if __name__ == '__main__':
