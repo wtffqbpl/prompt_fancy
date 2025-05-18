@@ -138,7 +138,7 @@ def get_completion(user_prompt, model='llama3.2', sys_prompt=None, temperature=0
     return split_think_answer(msg)
 
 
-def get_completion_from_messages(messages, model='llama3.2', temperature=0.0, max_tokens=32*1024):
+def get_completion_from_messages(messages, model='qwen3:1.7b', temperature=0.0, max_tokens=32*1024):
 
     _ = load_dotenv(find_dotenv())
     platform = os.environ["PLATFORM"]

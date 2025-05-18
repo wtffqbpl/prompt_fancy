@@ -213,9 +213,6 @@ class TestChatGPTPluginDemo(unittest.TestCase):
         print(output_string)
 
     def test_model_inference(self):
-
-
-        
         system_msg = f"""
         You are a customer service assistant for a large electronic store. \
         Respond in a friendly and helpful tone, with very concise answers. \
@@ -230,7 +227,6 @@ class TestChatGPTPluginDemo(unittest.TestCase):
         msgs = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": user_msg},
-            {"role": "assistant", "content": f"Relevant product information:\n{}"}
         ]
         pass
 

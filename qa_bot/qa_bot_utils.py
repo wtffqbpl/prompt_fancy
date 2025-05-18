@@ -1,6 +1,7 @@
 import json
 import openai
 from collections import defaultdict
+from utils.tools import get_completion_from_messages
 
 products_file = 'products.json'
 categories_file = 'categories.json'
@@ -109,15 +110,6 @@ step_6_system_message_content = f"""
 step_6_system_message = {'role':'system', 'content': step_6_system_message_content}    
 
 
-def get_completion_from_messages(messages, model="gpt-3.5-turbo", temperature=0, max_tokens=500):
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-        temperature=temperature, 
-        max_tokens=max_tokens, 
-    )
-    return response.choices[0].message["content"]
-
 def create_categories():
     categories_dict = {
       'Billing': [
@@ -207,7 +199,8 @@ def find_category_and_product(user_input,products_and_category):
     {'role':'system', 'content': system_message},    
     {'role':'user', 'content': f"{delimiter}{user_input}{delimiter}"},  
     ] 
-    return get_completion_from_messages(messages)
+    response, _ = get_completion_from_messages(messages)
+    return response
 
 def find_category_and_product_only(user_input,products_and_category):
     delimiter = "####"
@@ -268,12 +261,15 @@ ZoomMaster Camcorder
 FotoSnap Instant Camera
     
     Only output the list of objects, nothing else.
+    
+    THE RESPONSE MUST BE JSON FORMAT.
     """
     messages =  [  
     {'role':'system', 'content': system_message},    
     {'role':'user', 'content': f"{delimiter}{user_input}{delimiter}"},  
     ] 
-    return get_completion_from_messages(messages)
+    response, _ = get_completion_from_messages(messages)
+    return response
 
 def get_products_from_query(user_msg):
     """
@@ -305,7 +301,7 @@ def get_products_from_query(user_msg):
     {'role':'system', 'content': system_message},    
     {'role':'user', 'content': f"{delimiter}{user_msg}{delimiter}"},  
     ] 
-    category_and_product_response = get_completion_from_messages(messages)
+    category_and_product_response, _ = get_completion_from_messages(messages)
     
     return category_and_product_response
 
@@ -357,6 +353,7 @@ def read_string_to_list(input_string):
         return None
 
     try:
+        print(input_string)
         input_string = input_string.replace("'", "\"")  # Replace single quotes with double quotes for valid JSON
         data = json.loads(input_string)
         return data
@@ -413,7 +410,7 @@ def answer_user_msg(user_msg,product_info):
     {'role':'user', 'content': f"{delimiter}{user_msg}{delimiter}"},  
     {'role':'assistant', 'content': f"Relevant product information:\n{product_info}"},   
     ] 
-    response = get_completion_from_messages(messages)
+    response, _ = get_completion_from_messages(messages)
     return response
 
 def create_products():
