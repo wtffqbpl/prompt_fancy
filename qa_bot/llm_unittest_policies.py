@@ -4,10 +4,17 @@ import unittest
 import os
 import json
 from pprint import pprint
+
+from sqlalchemy import custom_op
+
 from utils.tools import get_model_name, get_completion_from_messages
 from qa_bot.qa_bot_utils import (
     create_products,
-    get_products_and_category
+    get_products_and_category,
+    get_products_from_query,
+    read_string_to_list,
+    get_mentioned_product_info,
+    answer_user_msg
 )
 
 
@@ -211,7 +218,7 @@ def eval_response_with_ideal(response : str, ideal, debug=False):
     # are found.
     if l_of_d == [] and ideal == []:
         return 1
-    # The another case is that the response and ideal results
+    # Another case is that the response and ideal results
     # are not compatible.
     elif l_of_d == [] or ideal == []:
         return 0
@@ -280,6 +287,213 @@ class TestQAV2(unittest.TestCase):
         response_v2 = find_category_and_product_v2(customer_msg, self.products_and_category, model=self.model)
 
         pprint(json.loads(response_v2.replace('\'', '\"')))
+
+
+def eval_with_rubric(test_set, assistant_answer, model):
+    cust_msg = test_set['customer_msg']
+    context = test_set['context']
+    completion = assistant_answer
+
+    # The prompt for answer correctness evaluation
+    system_msg = """
+    You are an assistant that evaluates how well the customer service agent \
+    answers a user question by looking at the context that the customer service \
+    agent is using to generate its response.
+    """
+
+    # The commands
+    user_msg = f"""
+    You are evaluating a submitted answer to a question based on the context \
+    that the agent uses to answer the question.
+    
+    Here is the data:
+    [BEGIN DATA]
+    ************
+    [QUESTION]: {cust_msg}
+    ************
+    [CONTEXT]: {context}
+    ************
+    [SUBMISSION]: {completion}
+    ************
+    [END DATA]
+    
+    Compare the factual content of the submitted answer with the context. \
+    Ignore any differences in style, grammar, or punctuation.
+    Answer the following questions:
+        - Is the Assistant response based only on the context provided? (Y or N)
+        - Does the answer include information that is not provided in the context? (Y or N)
+        - Is there any disagreement between the response and the context? (Y or N)
+        - For each question that the user asked, is there a corresponding answer to it?
+            Question 1: (Y or N)
+            Question 2: (Y or N)
+            ...
+            Question N: (Y or N)
+        - Of the number of questions asked, how many of these questions were addressed \
+          by the answer? (output a number)
+    """
+
+    msgs = [
+        {'role': 'system', 'content': system_msg},
+        {'role': 'user', 'content': user_msg}
+    ]
+
+    response, _ = get_completion_from_messages(msgs, model=model)
+
+    return response
+
+
+test_set_ideal = {
+'customer_msg': """\
+tell me about the smartx pro phone and the fotosnap camera, the dslr one.
+Also, what TVs or TV related products do you have?"""
+,
+'ideal_answer':"""\
+Of course! The SmartX ProPhone is a powerful \
+smartphone with advanced camera features. \
+For instance, it has a 12MP dual camera. \
+Other features include 5G wireless and 128GB storage. \
+It also has a 6.1-inch display. The price is $899.99.
+The FotoSnap DSLR Camera is great for \
+capturing stunning photos and videos. \
+Some features include 1080p video, \
+3-inch LCD, a 24.2MP sensor, \
+and interchangeable lenses. \
+The price is 599.99.
+For TVs and TV related products, we offer 3 TVs \
+All TVs offer HDR and Smart TV.
+The CineView 4K TV has vibrant colors and smart features. \
+Some of these features include a 55-inch display, \
+'4K resolution. It's priced at 599.
+The CineView 8K TV is a stunning 8K TV. \
+Some features include a 65-inch display and \
+8K resolution. It's priced at 2999.99
+The CineView OLED TV lets you experience vibrant colors. \
+Some features include a 55-inch display and 4K resolution. \
+It's priced at 1499.99.
+We also offer 2 home theater products, both which include bluetooth.\
+The SoundMax Home Theater is a powerful home theater system for \
+an immmersive audio experience.
+Its features include 5.1 channel, 1000W output, and wireless subwoofer.
+It's priced at 399.99.
+The SoundMax Soundbar is a sleek and powerful soundbar.
+It's features include 2.1 channel, 300W output, and wireless subwoofer.
+It's priced at 199.99
+Are there any questions additional you may have about these products \
+that you mentioned here?
+Or may do you have other questions I can help you with?
+"""
+}
+
+
+def eval_vs_ideal(test_set, assistant_answer, model):
+    cus_msg = test_set['customer_msg']
+    ideal = test_set['ideal_answer']
+    completion = assistant_answer
+
+    system_msg = """
+    You are an assistant that evaluates how well the customer service agent \
+    answers a user question by comparing the response to the ideal (expert) \
+    response.
+    
+    Output a single letter and nothing else.
+    """
+
+    user_msg = f"""
+    You are comparing a submitted answer to an expert answer on a given question.
+    Here is the data:
+    [BEGIN DATA]
+    ************
+    [QUESTION]: {cus_msg}
+    ************
+    [EXPERT]: {ideal}
+    ************
+    [SUBMISSION]: {completion}
+    ************
+    [END DATA]
+    
+        Compare the factual of the submitted answer with the expert answer. \
+    Ignore any differences in style, grammar, or punctuation.
+        The submitted answer may either be a subset or superset of the expert answer, \
+    or it may conflict with it. Determine which case applies.
+        Answer the question by selecting one of the following options:
+        - A: The submitted answer is a subset of the expert answer and is fully consistent with it.
+        - B: The submitted answer is a superset of the expert answer and is fully consistent with it.
+        - C: The submitted answer contains all the same details as the expert answer.
+        - D: There is a disagreement between the submitted answer and the expert answer.
+        - E: The answers differ, but these differences don't matter from the persepective of factuality.
+        
+        choice_strings: ABCDE
+    """
+
+    msgs = [
+        {'role': 'system', 'content': system_msg},
+        {'role': 'user', 'content': user_msg}
+    ]
+
+    response, think = get_completion_from_messages(msgs, model=model)
+    return response
+
+
+class TestUncertenedQA(unittest.TestCase):
+    def setUp(self) -> None:
+        self.model = get_model_name()
+        if not os.path.exists('products.json'):
+            create_products()
+        self.products_and_category = get_products_and_category()
+
+    def test_process_user_message(self):
+        customer_msg = f"""
+        Tell me about the smartx pro phone and the fotosnap camera, the dslr one.
+        Also, what TVs or TV related products do you have?"""
+
+        # Extract the products from the customer message
+        products_by_category = get_products_from_query(customer_msg)
+
+        # Convert the products to a list
+        category_and_product_list = read_string_to_list(products_by_category)
+
+        # Query product info
+        product_info = get_mentioned_product_info(category_and_product_list)
+
+        # Generate answer for the user message
+        assistant_answer = answer_user_msg(user_msg=customer_msg, product_info=product_info)
+
+        print(assistant_answer)
+
+        # Evaluate the response with LLM model.
+
+        # question and context
+        cust_prod_info = {
+            'customer_msg':customer_msg,
+            'context': product_info
+        }
+
+        evaluation_output = eval_with_rubric(cust_prod_info, assistant_answer, self.model)
+        print("\n\n\n", evaluation_output)
+
+    def test_process_user_message_2(self):
+        customer_msg = f"""
+        Tell me about the smartx pro phone and the fotosnap camera, the dslr one.
+        Also, what TVs or TV related products do you have?"""
+
+        # Extract the products from the customer message
+        products_by_category = get_products_from_query(customer_msg)
+
+        # Convert the products to a list
+        category_and_product_list = read_string_to_list(products_by_category)
+
+        # Query product info
+        product_info = get_mentioned_product_info(category_and_product_list)
+
+        # Generate answer for the user message
+        assistant_answer = answer_user_msg(user_msg=customer_msg, product_info=product_info)
+
+        evaluation_output = eval_vs_ideal(test_set_ideal, assistant_answer, self.model)
+        print("\n\n\n", evaluation_output)
+
+        assistant_answer_2 = "life is like a box of chocolates."
+        evaluation_output_2 = eval_vs_ideal(test_set_ideal, assistant_answer_2, self.model)
+        print("\n\n\n\n", evaluation_output_2)
 
 
 if __name__ == '__main__':
