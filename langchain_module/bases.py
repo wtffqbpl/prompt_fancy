@@ -2,7 +2,7 @@
 
 import unittest
 import json
-from langchain_ollama import OllamaLLM
+from langchain_community.llms import Ollama
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema
 from langchain.output_parsers import StructuredOutputParser
@@ -15,7 +15,7 @@ class TestLangChainOllama(unittest.TestCase):
         self.model = get_model_name()
 
     def test_ollama_new_api(self):
-        llm = OllamaLLM(model=self.model, temperature=0.2)
+        llm = Ollama(model=self.model, temperature=0.2)
 
         response, think = split_think_answer(llm.invoke("请使用中文介绍一下中国的四大发明。"))
         print(response)
