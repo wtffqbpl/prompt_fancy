@@ -58,7 +58,11 @@ This project contains various modules and applications. Refer to the specific di
 │       └── templates/
 │           └── index.html
 ├── langchain_module/
-│   └── [LangChain related files]
+│   ├── __init__.py
+│   ├── bases.py
+│   ├── memory.py
+│   ├── memory_new_api.py
+│   └── model_chain.py
 ├── prompt_engineering/
 │   ├── __init__.py
 │   ├── chatbox.py
@@ -96,6 +100,12 @@ This project contains various modules and applications. Refer to the specific di
 - `dialog_manager.py`: Manages conversation flow and state, handling user input and generating appropriate responses.
 - `memory.py`: Implements both short-term (Redis) and long-term (PostgreSQL) memory storage for chat history and user context.
 
+### LangChain Module
+- `bases.py`: Base classes and interfaces for LangChain integration, providing core functionality for chain operations.
+- `memory.py`: Implementation of LangChain memory components for storing and retrieving conversation history.
+- `memory_new_api.py`: Updated memory implementation using the latest LangChain API.
+- `model_chain.py`: Chain implementations for model interactions and prompt processing.
+
 ### Prompt Engineering
 - `chatbox.py`: Interactive chat interface for testing and demonstrating prompt engineering techniques.
 - `iterative_prompt_devel.py`: Examples and utilities for iterative prompt development and refinement.
@@ -122,12 +132,17 @@ This project contains various modules and applications. Refer to the specific di
 ## Dependencies
 
 The project uses several key dependencies:
-- OpenAI API for language model interactions
-- FastAPI for the web application
-- Redis and PostgreSQL for data storage
-- LangChain for enhanced LLM interactions
-- Panel for UI components
-- Various utility libraries (rich, redlines, etc.)
+- OpenAI API (v1.77) for language model interactions
+- FastAPI (v0.115.12) for the web application
+- Redis (v6.0.0) and SQLAlchemy (v2.0.40) for data storage
+- LangChain (v0.3.25) and LangChain Community (v0.3.24) for enhanced LLM interactions
+- Panel (v1.6.3) for UI components
+- Various utility libraries:
+  - rich (v13.9.4) for terminal formatting
+  - redlines (v0.5.1) for text comparison
+  - selenium (v4.32.0) for web automation
+  - pandas (v2.2.3) for data manipulation
+  - tenacity (v8.5.0) for retry logic
 
 ## Contributing
 
