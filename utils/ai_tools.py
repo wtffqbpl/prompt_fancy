@@ -66,7 +66,44 @@ def get_weather(location: str) -> str:
         return f" An unknown error: {e}"
 
 
+def search_internet(query: str, max_results: int = 3) -> str:
+    """Search the internet for a query and return the top results."""
+    _ = load_dotenv(find_dotenv())
+    serper_api_key = os.environ["GOOGLE_SERPER_SEARCH_API_KEY"]
+    search_url = "https://google.serper.dev/search"
+
+    payload = {
+        "q": query,
+    }
+
+    headers = {
+        "X-API-KEY": serper_api_key,
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.post(search_url, json=payload, headers=headers)
+        result = response.json()
+
+        # Acquire the top max_results results
+        snippets = []
+        for item in result.get('organic', [])[:max_results]:
+            title = item.get('title', 'No title')
+            snippet = item.get('snippet', 'No snippet')
+            link = item.get('link', 'No link')
+            snippets.append(f"{title}\n{snippet}\n{link}\n")
+
+        return "\n".join(snippets)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return "Cannot perform search at the moment."
+    except Exception as e:
+        return f" An unknown error: {e}"
+
+
 if __name__ == '__main__':
-    print(get_weather("珠海"))
+    # print(get_weather("珠海"))
+    print(search_internet("Python programming language"))
 
 
