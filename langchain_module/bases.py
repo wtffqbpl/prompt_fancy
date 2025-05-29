@@ -3,11 +3,13 @@
 import unittest
 import json
 from langchain_community.llms import Ollama
+from langchain_community.chat_models import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import ResponseSchema
 from langchain.output_parsers import StructuredOutputParser
 from utils.tools import get_model_name, split_think_answer
 from utils.ollama_utils import OllamaUtils
+from langchain.schema import SystemMessage, HumanMessage
 
 
 class TestLangChainOllama(unittest.TestCase):
@@ -198,6 +200,57 @@ class TestLangChainOllama(unittest.TestCase):
         output_dict = output_parser.parse(response)
         print("The result type: ", type(output_dict))
         print("The result (after parsed): ", output_dict)
+
+    def test_basic_1(self):
+        llm = Ollama(model=self.model, temperature=0.0)
+
+        res = llm.invoke("你是谁？")
+        print(type(res))
+        print(res)
+
+    def test_basic_2_batch_mode(self):
+        llm = Ollama(model=self.model, temperature=0.8)
+
+        # 批量获取回答
+        res = llm.generate(["请给我讲个笑话。", "请给我讲一个故事。",])
+        print(type(res))
+        print(res.llm_output)
+
+        for data in res.generations:
+            print(data)
+            print(type(data[0]))
+        print(res.dict())
+
+    def test_chat_models_1(self):
+        chat = ChatOllama(model=self.model, temperature=0.0)
+
+        res = chat.invoke([
+            SystemMessage(content="You are a writer."),
+            HumanMessage(content="你是谁？"),
+        ])
+        print(res)
+        print(type(res))
+
+        res = chat.invoke([
+            ('system', "You are a writer."),
+            ('human', "你是谁？"),
+        ])
+        print(res)
+
+    def test_model_create_api(self):
+        client = Ollama()
+
+        response = client.chat.completions.create(
+            model=self.model,
+            temperature=0.8,
+            system="You are a helpful assistant.",
+            prompt=["你是谁？", "你能给我什么帮助？"]
+        )
+
+        print(response.dict())
+        print(response.choices[0].text)
+        print(response.choices[1].text)
+        pass
 
 
 if __name__ == '__main__':

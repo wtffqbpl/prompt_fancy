@@ -40,5 +40,11 @@ def get_model_name():
     return model_name
 
 
+def get_open_weather_api_key():
+    _ = load_dotenv(find_dotenv())
+    open_weather_api_key = os.environ["OPEN_WEATHER_API_KEY"]
+    return open_weather_api_key
+
+
 if __name__ == "__main__":
     pass

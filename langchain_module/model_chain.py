@@ -11,7 +11,7 @@ from langchain.chains import SequentialChain
 
 warnings.filterwarnings("ignore")
 
-from langchain_ollama.chat_models import ChatOllama
+from langchain_community.chat_models import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
 from utils.tools import get_model_name, split_think_answer
