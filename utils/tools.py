@@ -5,7 +5,7 @@ import os
 import re
 import requests
 from dotenv import load_dotenv, find_dotenv
-from typing import Optional, Tuple
+from typing_extensions import LiteralString
 from utils.configs import get_llm_client
 from utils.configs import get_model_name
 from selenium import webdriver
@@ -31,7 +31,7 @@ def show_html_content(html_content=None):
     pass
 
 
-def split_think_answer(text: str) -> Tuple[Optional[str], str]:
+def split_think_answer(text: str) -> tuple[str, LiteralString | None]:
     """
     将 text 中的 <think>...</think> 部分提取为 think_content，
     并将剩余内容作为 answer_content 返回。

@@ -225,7 +225,7 @@ class TestLangChainOllama(unittest.TestCase):
         chat = ChatOllama(model=self.model, temperature=0.0)
 
         res = chat.invoke([
-            SystemMessage(content="You are a writer."),
+            SystemMessage(content="You are a writer, and you would reply with Chinese."),
             HumanMessage(content="你是谁？"),
         ])
         print(res)
